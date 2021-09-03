@@ -17,7 +17,7 @@ def _parse_args():
     """
     parser = argparse.ArgumentParser(description='optimization.py')
     parser.add_argument('--func', type=str, default='QUAD', help='function to optimize (QUAD or NN)')
-    parser.add_argument('--lr', type=float, default=1., help='learning rate')
+    parser.add_argument('--lr', type=float, default=OPTIMAL_STEP_SIZE, help='learning rate')
     parser.add_argument('--weight_decay', type=float, default=0., help='weight decay')
     parser.add_argument('--epochs', type=int, default=100, help='number of epochs')
     args = parser.parse_args()

@@ -49,6 +49,11 @@ class NeuralSentimentClassifier(SentimentClassifier):
     def __init__(self):
         raise NotImplementedError
 
+class DANClassifier(torch.nn.Module):
+    def __init__(self, layers=32, classes=2, n_input=3):
+        pass
+    def forward(self, x):
+        pass
 
 def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_exs: List[SentimentExample], word_embeddings: WordEmbeddings) -> NeuralSentimentClassifier:
     """
@@ -58,5 +63,10 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     :param word_embeddings: set of loaded word embeddings
     :return: A trained NeuralSentimentClassifier model
     """
+    short_list =  train_exs[:5]
+    pther_short_list = dev_exs[:5]
+    print(short_list)
+    print(pther_short_list)
+ 
     raise NotImplementedError
 

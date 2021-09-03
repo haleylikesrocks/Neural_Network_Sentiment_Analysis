@@ -11,6 +11,14 @@
       "program": "optimization.py",
       "console": "integratedTerminal",
       "args": ["--lr", "0.1"]
+    },
+    {
+      "name": "Q2",
+      "type": "python",
+      "request": "launch",
+      "program": "neural_sentiment_classifier.py",
+      "console": "integratedTerminal",
+      "args": ["--word_vecs_path", "data/glove.6B.300d-relativized.txt"]
     }
   ]
 }
