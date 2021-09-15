@@ -35,9 +35,6 @@ class FFNN(nn.Module):
         # Initialize weights according to a formula due to Xavier Glorot.
         nn.init.xavier_uniform_(self.V.weight)
         nn.init.xavier_uniform_(self.W.weight)
-        # Initialize with zeros instead
-        # nn.init.zeros_(self.V.weight)
-        # nn.init.zeros_(self.W.weight)
 
     def forward(self, x):
         """
