@@ -28,7 +28,6 @@ class SentimentClassifier(object):
         for the purposes of this assignment.
         :param all_ex_words: A list of all exs to do prediction on
         :return:
-        if you want to implement batching then you should modify this because right now it jus loops
         """
         return [self.predict(ex_words) for ex_words in all_ex_words]
 
@@ -51,8 +50,9 @@ class NeuralSentimentClassifier(SentimentClassifier):
         self.network = DANClassifier(1,32,2)
 
 class DANClassifier(torch.nn.Module):
-    def __init__(self, inp, hid, out):
+    def __init__(self, inp=1, hid=32, out=2):
         super(DANClassifier, self).__init__()
+        self.embedding = torch.nn.Embedding(5000, 40, padding_idx=0)
         self.V = nn.Linear(inp, hid)
         # self.g = nn.Tanh()
         self.g = nn.ReLU()
@@ -63,6 +63,10 @@ class DANClassifier(torch.nn.Module):
         nn.init.xavier_uniform_(self.W.weight)
 
     def forward(self, x):
+        #take embedding
+        #average embedding
+
+        x =  self.embedding(torch.FloatTensor(x))
         return self.log_softmax(self.W(self.g(self.V(x))))
 
 def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_exs: List[SentimentExample], word_embeddings: WordEmbeddings) -> NeuralSentimentClassifier:
@@ -74,10 +78,69 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     :return: A trained NeuralSentimentClassifier model
 
     """
-    short_list =  train_exs[:5]
-    pther_short_list = dev_exs[0].words
-    print(short_list)
-    print(pther_short_list)
- 
-    raise NotImplementedError
+    # Define hyper parmeters and model
+    num_epochs = 1
+    initial_learning_rate = 0.1
+    batch_size = 32
+
+    # Model specifications
+    model = DANClassifier()
+    optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+    loss = torch.nn.NLLLoss() # because of soft max
+
+
+    for epoch in range(num_epochs):
+        #shuffle data
+        ex_indices = [i for i in range(0, len(train_exs))]
+        random.shuffle(ex_indices)
+
+        # set sepoch level varibles
+        total_loss = 0.0
+        accuracys = []
+
+        for idx in ex_indices:
+            #create batch
+
+            #### batch here 
+            # for each sample  paddinx* total lengths
+            
+            ### grab first n-batch size  put into matrix/n dim tensor [batchsize, len_sent (52?)] [32 x 32 x len vocab - how to get?]
+            ### pad with np 0 array
+            #####
+            x = train_exs[idx].words
+            y_true = train_exs[idx].label
+
+            # iterrate 
+            # use indeter to convert from word to indices - pass to embedder 
+            #  word_embeddings.word_indexer
+            # nn.em
+            # self.embedding = torch.nn.Embedding.from_pretrained - look up on pytorch(from indexer, 52, padding_idx=0, from_pretrained - glove 300-d)
+            # do embedding sperately for each item in the batch
+            # run on each word and each example - nested for loop
+
+            # run through model
+            model.zero_grad()
+            y_pred = model.forward(x)
+            
+            # calculate loss and accuracy
+            total_loss += loss(y_pred, y_true)
+            accuracys.append(calculate_accuracy(y_pred, y_true))
+            
+            # Computes the gradient and takes the optimizer step
+            loss.backward()
+            optimizer.step()
+
+        print("Total loss on epoch %i: %f" % (epoch, total_loss))
+        print("The accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+
+
+def calculate_accuracy(y_predict, y_true):
+    #calculates te acurracy of batched samples
+    acc = []
+    for index in range(len(y_predict)):
+        state = 1 if y_predict[index] == y_true[index] else 0
+        acc.append(state)
+    return np.mean(acc)
+        
+
 
