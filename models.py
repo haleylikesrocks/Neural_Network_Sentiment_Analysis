@@ -53,7 +53,7 @@ class NeuralSentimentClassifier(SentimentClassifier):
         self.network = model
 
 class DANClassifier(torch.nn.Module):
-    def __init__(self, embeddings, inp=1, hid=32, out=2):
+    def __init__(self, embeddings, inp=300, hid=32, out=2):
         super(DANClassifier, self).__init__()
         self.word_embeddings = embeddings
         self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(embeddings.vectors), padding_idx=0)
@@ -95,7 +95,10 @@ class DANClassifier(torch.nn.Module):
         return [self.predict(ex_words, not_preprocessed) for ex_words in all_ex_words]
 
     def forward(self, x):
-        return self.log_softmax(self.W(self.g(self.V(x))))
+        x = self.V(x.float())
+        x = self.g(x)
+        x = self.W(x)
+        return x
 
 def get_batches(data, batch_size):
     count = 0
@@ -115,7 +118,7 @@ def get_labels_and_data(batch):
     data = []
     for datem, label in batch:
         labels.append(label)
-        data.append(datem.numpy())
+        data.append(datem)
     return data, labels
 
 
@@ -136,7 +139,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     # Model specifications
     model = DANClassifier(word_embeddings)
     optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
-    loss = torch.nn.NLLLoss() # because of soft max
+    loss = torch.nn.CrossEntropyLoss()
 
     # Preprocess data
     print("Preprocessing the Training data")
@@ -158,10 +161,11 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             batch_data, batch_label = get_labels_and_data(batch)
 
             model.zero_grad()
-            y_pred = model.predict_all(torch.tensor(batch_data), True)
+            y_pred = model.predict_all(batch_data, False)
             
             # calculate loss and accuracy
-            total_loss += loss(y_pred, batch_label)
+            for i in range(batch_size):
+                total_loss += loss(y_pred[i], batch_label[i])
             accuracys.append(calculate_accuracy(y_pred, batch_label))
             
             # Computes the gradient and takes the optimizer step
