@@ -66,9 +66,15 @@ class DANClassifier(torch.nn.Module):
     def forward(self, x):
         #take embedding
         #average embedding
-
-        x =  self.embedding(torch.FloatTensor(x))
-        return self.log_softmax(self.W(self.g(self.V(x))))
+        embedded_data = torch.empty((1,300))
+        for i, sentence in enumerate(x):
+            embbedings = torch.empty((1,300))
+            for index, word in enumerate(sentence):
+                embedded_word =  self.embedding(word)
+                embbedings = torch.cat((embbedings, torch.unsqueeze(embedded_word,0)))
+            ave_embed = torch.mean(torch.tensor(embbedings), 0)
+            embedded_data = torch.cat((embedded_data, torch.unsqueeze(ave_embed, 0)))  
+        return self.log_softmax(self.W(self.g(self.V(torch.tensor(embedded_data)))))
 
 def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_exs: List[SentimentExample], word_embeddings: WordEmbeddings) -> NeuralSentimentClassifier:
     """
@@ -99,8 +105,9 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
         accuracys = []
 
         for data, labels in train_data:
-            print(len(data))
-            print(len(labels))
+            print(torch.tensor(data).shape) #32 x 52
+
+            # print(len(labels))
             # run through model
             model.zero_grad()
             y_pred = model.forward(data)
@@ -132,26 +139,21 @@ def calculate_accuracy(y_predict, y_true):
 
 class Words(Dataset):
     def __init__(self, examples, word_embeddings: WordEmbeddings):
-        self.count = 0
         self.data = []
 
         for item in examples:
-            
             #pass to indexer
             new_sentence =  []
             for word in item.words:
-                index = word_embeddings.word_indexer.add_and_get_index(word, add=False) if word_embeddings.word_indexer.add_and_get_index(word, add=False) != -1 else 0
+                index = word_embeddings.word_indexer.index_of(word) if word_embeddings.word_indexer.index_of(word) != -1 else 0
                 new_sentence.append(index)
-            
             # pad with 0
             new_sentence += [0] * (52 - len(new_sentence))
-            print(len(new_sentence))
             
-            self.data.append([new_sentence, item.label])
-            self.count += 1
+            self.data.append((np.array(new_sentence), item.label))
 
     def __len__(self):
-        return self.count
+        return len(self.data)
 
     def __getitem__(self, idx):
         return self.data[idx]
