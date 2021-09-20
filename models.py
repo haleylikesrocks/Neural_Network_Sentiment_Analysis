@@ -130,7 +130,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     :return: A trained NeuralSentimentClassifier model
     """
     # Define hyper parmeters and model
-    num_epochs = 1
+    num_epochs = 5
     initial_learning_rate = 0.1
     batch_size = 32
 
@@ -142,8 +142,12 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     # Preprocess data
     print("Preprocessing the Training data")
     train_data = []
-    for item in train_exs[:32]: #for testing
+    for item in train_exs: #for testing
         train_data.append((model.preprocess(item.words), item.label))
+    
+    dev_data = []
+    for item in dev_exs:
+        dev_data.append((model.preprocess(item.words), item.label))
 
     for epoch in range(num_epochs):
         print("entering epoch %i" % epoch)
@@ -164,19 +168,27 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             # calculate loss and accuracy
             loss = loss_funct(y_pred, batch_label)
             total_loss += loss
-            # for i in range(batch_size):
-                
-            #     ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
-            #     accuracys.append(ret)
+            for i in range(len(batch)):
+                ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
+                accuracys.append(ret)
             
             # Computes the gradient and takes the optimizer step
             loss.backward()
             optimizer.step()
 
-        #work trough dev examples
+        # Dev Testing
+        dev_accuracys = []
+        batches = get_batches(dev_data, batch_size)
+        for batch in batches:
+            batch_data, batch_label = get_labels_and_data(batch)
+            y_pred = model.predict(batch_data, False)
+            for i in range(len(batch)):
+                ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
+                dev_accuracys.append(ret)
 
         print("Total loss on epoch %i: %f" % (epoch, total_loss))
-        # print("The accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+        print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+        print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
 
     final = NeuralSentimentClassifier(model)
 
