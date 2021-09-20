@@ -142,7 +142,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     # Preprocess data
     print("Preprocessing the Training data")
     train_data = []
-    for item in train_exs:
+    for item in train_exs[:32]: #for testing
         train_data.append((model.preprocess(item.words), item.label))
 
     for epoch in range(num_epochs):
@@ -159,12 +159,13 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             batch_data, batch_label = get_labels_and_data(batch)
 
             model.zero_grad()
-            y_pred = model.predict_all(batch_data, False)
+            y_pred = model.predict(batch_data, False)
             
             # calculate loss and accuracy
             for i in range(batch_size):
-                total_loss += loss(y_pred[i], batch_label[i])
-                accuracys.append(calculate_accuracy(y_pred[i], batch_label[i]))
+                total_loss += loss(torch.unsqueeze(y_pred[i], 0), torch.unsqueeze(torch.tensor(batch_label[i]),0))
+                ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
+                accuracys.append(ret)
             
             # Computes the gradient and takes the optimizer step
             loss.backward()
@@ -177,10 +178,6 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
 
     final = NeuralSentimentClassifier(model)
 
-
-def calculate_accuracy(outputs, labels):
-    outputs_idx = outputs.max(1)[1].type_as(labels)
-    return outputs_idx.eq(labels).float().mean()
 
 class Words(Dataset):
     def __init__(self, examples, word_embeddings: WordEmbeddings):
