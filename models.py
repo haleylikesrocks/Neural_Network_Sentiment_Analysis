@@ -118,8 +118,8 @@ def get_labels_and_data(batch):
     data = []
     for datem, label in batch:
         labels.append(label)
-        data.append(datem)
-    return data, labels
+        data.append(np.array(datem, dtype=np.float32))
+    return torch.tensor(data), torch.tensor(labels)
 
 def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_exs: List[SentimentExample], word_embeddings: WordEmbeddings) -> NeuralSentimentClassifier:
     """
@@ -137,7 +137,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     # Model specifications
     model = DANClassifier(word_embeddings)
     optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
-    loss = torch.nn.CrossEntropyLoss()
+    loss_funct = torch.nn.CrossEntropyLoss()
 
     # Preprocess data
     print("Preprocessing the Training data")
@@ -162,10 +162,12 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             y_pred = model.predict(batch_data, False)
             
             # calculate loss and accuracy
-            for i in range(batch_size):
-                total_loss += loss(torch.unsqueeze(y_pred[i], 0), torch.unsqueeze(torch.tensor(batch_label[i]),0))
-                ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
-                accuracys.append(ret)
+            loss = loss_funct(y_pred, batch_label)
+            total_loss += loss
+            # for i in range(batch_size):
+                
+            #     ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
+            #     accuracys.append(ret)
             
             # Computes the gradient and takes the optimizer step
             loss.backward()
@@ -174,7 +176,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
         #work trough dev examples
 
         print("Total loss on epoch %i: %f" % (epoch, total_loss))
-        print("The accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+        # print("The accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
 
     final = NeuralSentimentClassifier(model)
 
