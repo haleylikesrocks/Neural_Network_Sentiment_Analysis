@@ -61,7 +61,7 @@ class DANClassifier(torch.nn.Module):
         self.V = nn.Linear(inp, hid)
         self.g = nn.ReLU()
         self.W = nn.Linear(hid, out)
-        self.log_softmax = nn.LogSoftmax(dim=0)
+        # self.log_softmax = nn.LogSoftmax(dim=0)
 
     def preprocess(self, sentence):
         new_sentence =  []
@@ -121,8 +121,6 @@ def get_labels_and_data(batch):
         data.append(datem)
     return data, labels
 
-
-
 def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_exs: List[SentimentExample], word_embeddings: WordEmbeddings) -> NeuralSentimentClassifier:
     """
     :param args: Command-line args so you can access them here
@@ -166,7 +164,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             # calculate loss and accuracy
             for i in range(batch_size):
                 total_loss += loss(y_pred[i], batch_label[i])
-            accuracys.append(calculate_accuracy(y_pred, batch_label))
+                accuracys.append(calculate_accuracy(y_pred[i], batch_label[i]))
             
             # Computes the gradient and takes the optimizer step
             loss.backward()
@@ -180,14 +178,9 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     final = NeuralSentimentClassifier(model)
 
 
-def calculate_accuracy(y_predict, y_true):
-    #calculates te acurracy of batched samples
-    acc = []
-    for index in range(len(y_predict)):
-        state = 1 if y_predict[index] == y_true[index] else 0
-        acc.append(state)
-    return np.mean(acc)
-
+def calculate_accuracy(outputs, labels):
+    outputs_idx = outputs.max(1)[1].type_as(labels)
+    return outputs_idx.eq(labels).float().mean()
 
 class Words(Dataset):
     def __init__(self, examples, word_embeddings: WordEmbeddings):
