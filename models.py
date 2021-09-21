@@ -57,6 +57,7 @@ class DANClassifier(torch.nn.Module):
 
         self.V = nn.Linear(inp, hid)
         self.g = nn.ReLU()
+        self.mid = nn.Linear(hid,hid)
         self.W = nn.Linear(hid, out)
 
     def preprocess(self, sentence):
@@ -93,6 +94,8 @@ class DANClassifier(torch.nn.Module):
     def forward(self, x):
         x = self.V(x.float())
         x = self.g(x)
+        x = self.mid(x)
+        x = self.g(x)
         x = self.W(x)
         return x
 
@@ -126,8 +129,8 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
     :return: A trained NeuralSentimentClassifier model
     """
     # Define hyper parmeters and model
-    num_epochs = 5
-    initial_learning_rate = 0.1
+    num_epochs = 8
+    initial_learning_rate = 0.01
     batch_size = 32
 
     # Model specifications
@@ -182,9 +185,9 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
                 ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
                 dev_accuracys.append(ret)
 
-        # print("Total loss on epoch %i: %f" % (epoch, total_loss))
-        # print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
-        # print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
+        print("Total loss on epoch %i: %f" % (epoch, total_loss))
+        print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+        print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
 
     return model
 
