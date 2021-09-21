@@ -10,7 +10,6 @@ from torch.utils import data
 from sentiment_data import *
 from torch.utils.data import Dataset, DataLoader
 
-
 class SentimentClassifier(object):
     """
     Sentiment classifier base type
@@ -59,7 +58,6 @@ class DANClassifier(torch.nn.Module):
         self.V = nn.Linear(inp, hid)
         self.g = nn.ReLU()
         self.W = nn.Linear(hid, out)
-        # self.log_softmax = nn.LogSoftmax(dim=0)
 
     def preprocess(self, sentence):
         new_sentence =  []
@@ -78,9 +76,9 @@ class DANClassifier(torch.nn.Module):
 
         return ave_embedding
             
-    def predict(self, sentence, not_preprocessed=True):
-        x = self.preprocess(sentence) if not_preprocessed else sentence
-        return self.forward(x)
+    def predict(self, sentence):
+        x = self.preprocess(sentence)
+        return self.forward(x).max(0)[1]
     
     def predict_all(self, all_ex_words: List[List[str]], not_preprocessed=True) -> List[int]:
         """
@@ -90,7 +88,7 @@ class DANClassifier(torch.nn.Module):
         :param all_ex_words: A list of all exs to do prediction on
         :return:
         """
-        return [self.predict(ex_words, not_preprocessed) for ex_words in all_ex_words]
+        return [self.predict(ex_words) for ex_words in all_ex_words]
 
     def forward(self, x):
         x = self.V(x.float())
@@ -161,7 +159,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
             batch_data, batch_label = get_labels_and_data(batch)
 
             model.zero_grad()
-            y_pred = model.predict(batch_data, False)
+            y_pred = model.forward(batch_data)
             
             # calculate loss and accuracy
             loss = loss_funct(y_pred, batch_label)
@@ -179,14 +177,14 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
         batches = get_batches(dev_data, batch_size)
         for batch in batches:
             batch_data, batch_label = get_labels_and_data(batch)
-            y_pred = model.predict(batch_data, False)
+            y_pred = model.forward(batch_data)
             for i in range(len(batch)):
                 ret = 1 if y_pred[i].max(0)[1] == batch_label[i] else 0
                 dev_accuracys.append(ret)
 
-        print("Total loss on epoch %i: %f" % (epoch, total_loss))
-        print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
-        print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
+        # print("Total loss on epoch %i: %f" % (epoch, total_loss))
+        # print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
+        # print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
 
     return model
 
