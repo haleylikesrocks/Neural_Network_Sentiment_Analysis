@@ -34,7 +34,6 @@ class SentimentClassifier(object):
         """
         return [self.predict(ex_words, not_preprocessed) for ex_words in all_ex_words]
 
-
 class TrivialSentimentClassifier(SentimentClassifier):
     def predict(self, ex_words: List[str]) -> int:
         """
@@ -42,7 +41,6 @@ class TrivialSentimentClassifier(SentimentClassifier):
         :return: 1, always predicts positive class
         """
         return 1
-
 
 class NeuralSentimentClassifier(SentimentClassifier):
     """
@@ -190,7 +188,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
         print("The traing set accuracy for epoch %i: %f" % (epoch, np.mean(accuracys)))
         print("The dev set accuracy for epoch %i: %f" % (epoch, np.mean(dev_accuracys)))
 
-    final = NeuralSentimentClassifier(model)
+    return model
 
 
 class Words(Dataset):
