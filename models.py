@@ -146,7 +146,7 @@ def train_deep_averaging_network(args, train_exs: List[SentimentExample], dev_ex
         dev_data.append((model.preprocess(item.words), item.label))
 
     for epoch in range(num_epochs):
-        print("entering epoch %i" % epoch)
+        # print("entering epoch %i" % epoch)
         # set epoch level varibles
         total_loss = 0.0
         accuracys = []
